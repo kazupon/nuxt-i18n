@@ -1,11 +1,11 @@
-import { resolve } from 'pathe'
-import { resolveModule, addPluginTemplate, extendWebpackConfig } from '@nuxt/kit'
+import { resolveModule, addPluginTemplate, extendWebpackConfig, createResolver } from '@nuxt/kit'
 import webpack from 'webpack'
-import { distDir } from './dirs'
 
 import type { Nuxt } from '@nuxt/schema'
 
 export async function setupNuxtBridge(nuxt: Nuxt) {
+  const resolver = createResolver(import.meta.url)
+
   // resolve vue-i18n as vue-i18n-legacy
   nuxt.options.alias['vue-i18n'] = resolveModule('vue-i18n-legacy/dist/vue-i18n.esm.js', {
     paths: nuxt.options.modulesDir
@@ -21,10 +21,9 @@ export async function setupNuxtBridge(nuxt: Nuxt) {
   })
   nuxt.options.build.transpile.push('vue-i18n-bridge')
 
-  addPluginTemplate({
-    filename: 'runtime/bridge.plugin.mjs',
-    src: resolve(distDir, 'runtime/bridge.plugin.mjs')
-  })
+  const plugin = resolver.resolve('runtime/bridge.plugin.ts')
+  addPluginTemplate(plugin)
+  nuxt.options.build.transpile.push(plugin)
 
   extendWebpackConfig(config => {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- `config.plugins` is safe, so it's assigned with nuxt!
